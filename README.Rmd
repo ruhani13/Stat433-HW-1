@@ -1,0 +1,64 @@
+---
+title: "HW-1"
+author: "Ruhani Arora"
+date: '2022-09-28'
+output: github_document
+---
+
+```{r}
+library(dplyr)
+library(nycflights13)
+```
+
+
+1.How many flights have a missing dep_time? What other variables are missing? What might these rows represent?
+
+```{r}
+flights %>% 
+  filter(is.na(dep_time))
+```
+The other missing variables are dep_delay, arr_time, arr_delay and air_time. These rows might represent that the flight was canceled which is why these variables are missing.
+
+
+2.Currently dep_time and sched_dep_time are convenient to look at, but hard to compute with because they’re not really continuous numbers. Convert them to a more convenient representation of number of minutes since midnight.
+
+```{r}
+flights %>% 
+  mutate(
+    dep_time_mins= (dep_time%/% 100 * 60) + dep_time %% 100,
+    sched_dep_time_mins = (sched_dep_time%/% 100 * 60) + sched_dep_time %% 100
+    )
+```
+
+
+3.Look at the number of canceled flights per day. Is there a pattern? Is the proportion of canceled flights related to the average delay? Use multiple dyplr operations, all on one line, concluding with ggplot(aes(x= ,y=)) + geom_point()
+
+```{r}
+library(ggplot2)
+cancelled_flights_per_day <- flights %>%
+  mutate(cancelled_flight = (is.na(dep_delay) | is.na(arr_delay))) %>%
+  group_by(year,month,day) %>%
+  summarise(
+    cancelled_flights = sum(cancelled_flight),
+    total_flights = n(),
+  ) 
+ggplot(cancelled_flights_per_day)+
+  geom_point(aes(x=total_flights,y=cancelled_flights))
+```
+
+After looking at the graph, there seems to be a pattern between the days having more number of flights to have a higher number of cancelled flights.
+
+```{r}
+prop <- flights %>%
+  mutate(cancelled_flight = (is.na(dep_delay) | is.na(arr_delay))) %>%
+  group_by(year,month,day) %>%
+  summarise(
+    cancelled_prop = mean(cancelled_flight),
+    avg_dep_delay = mean(dep_delay, na.rm = TRUE)
+  ) %>%
+  ungroup()
+ggplot(prop) +
+  geom_point(aes(x = avg_dep_delay, y = cancelled_prop))
+```
+
+The proportion of canceled flights related to the average dep delay as if there is a longer delay in departure time the flight is more likely to get canceled. However, there are a few outliers in this graph where the avg dep delay is not high but the cancellation prop is is highest.
